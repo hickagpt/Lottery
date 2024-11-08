@@ -23,11 +23,8 @@ public class LotteryGame
 
     public void DrawPrizes()
     {
-        int totalTickets = 0;
-        foreach (var player in _players)
-        {
-            totalTickets += player.TicketsPurchased;
-        }
+        // Calculate total tickets purchased
+        int totalTickets = _players.Sum(player => player.TicketsPurchased);
 
         if (totalTickets == 0)
         {
@@ -35,22 +32,50 @@ public class LotteryGame
             return;
         }
 
+        // Calculate total revenue from ticket sales
         decimal revenue = totalTickets * _settings.TicketPrice;
-        decimal grandPrize = revenue * (decimal)_settings.PrizeDistribution.GrandPrizePercentage;
-        decimal secondPrize = revenue * (decimal)_settings.PrizeDistribution.SecondTierPercentage;
-        decimal thirdPrize = revenue * (decimal)_settings.PrizeDistribution.ThirdTierPercentage;
 
+        // Determine prize amounts based on prize distribution settings
+        decimal grandPrize = revenue * (decimal)_settings.PrizeDistribution.GrandPrizePercentage;
+        decimal secondPrizePool = revenue * (decimal)_settings.PrizeDistribution.SecondTierPercentage;
+        decimal thirdPrizePool = revenue * (decimal)_settings.PrizeDistribution.ThirdTierPercentage;
+
+        // Calculate lottery profit
         decimal roundProfit = revenue * 0.1m;
         LotteryProfit += roundProfit;
 
+        // Sort players by tickets purchased in descending order
         var winners = new List<Player>(_players);
         winners.Sort((a, b) => b.TicketsPurchased.CompareTo(a.TicketsPurchased));
 
-        if (winners.Count > 0) winners[0].Balance += grandPrize;
-        if (winners.Count > 1) winners[1].Balance += secondPrize;
-        if (winners.Count > 2) winners[2].Balance += thirdPrize;
+        // Grand Prize: Awarded to the player with the most tickets
+        if (winners.Count > 0)
+        {
+            winners[0].Balance += grandPrize;
+        }
 
-        _ui.Write($"Prizes distributed: Grand - {grandPrize:C}, Second - {secondPrize:C}, Third - {thirdPrize:C}");
+        // Calculate the number of winners for second and third tiers
+        int secondTierWinnersCount = (int)Math.Round(totalTickets * 0.1m);
+        int thirdTierWinnersCount = (int)Math.Round(totalTickets * 0.2m);
+
+        // Distribute second-tier prize equally among the top `secondTierWinnersCount` players
+        decimal secondPrizePerWinner = secondTierWinnersCount > 0 ? secondPrizePool / secondTierWinnersCount : 0;
+        for (int i = 1; i <= secondTierWinnersCount && i < winners.Count; i++)
+        {
+            winners[i].Balance += secondPrizePerWinner;
+        }
+
+        // Distribute third-tier prize equally among the next `thirdTierWinnersCount` players
+        decimal thirdPrizePerWinner = thirdTierWinnersCount > 0 ? thirdPrizePool / thirdTierWinnersCount : 0;
+        for (int i = secondTierWinnersCount + 1; i <= secondTierWinnersCount + thirdTierWinnersCount && i < winners.Count; i++)
+        {
+            winners[i].Balance += thirdPrizePerWinner;
+        }
+
+        // Display results
+        _ui.Write($"Prizes distributed: Grand - {grandPrize:C}, " +
+                  $"Second - {secondPrizePool:C} shared by {secondTierWinnersCount} winners, " +
+                  $"Third - {thirdPrizePool:C} shared by {thirdTierWinnersCount} winners");
         _ui.Write($"Lottery profit for this round: {roundProfit:C}");
     }
 

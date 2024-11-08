@@ -42,21 +42,42 @@ public class LotteryGameTests
     [Fact]
     public void DrawPrizes_DistributesPrizesCorrectly()
     {
-        // Arrange
+        // Arrange: Create players with ticket counts
         var player1 = new HumanPlayer(_fakeUI, "Player1", 10m) { TicketsPurchased = 5 };
         var player2 = new CPUPlayer("Player2", 10m, _fakeRandomNumberGenerator, _fakeUI) { TicketsPurchased = 3 };
         var player3 = new CPUPlayer("Player3", 10m, _fakeRandomNumberGenerator, _fakeUI) { TicketsPurchased = 2 };
 
         _lotteryGame.Players.AddRange(new Player[] { player1, player2, player3 });
 
+        // Calculate total ticket revenue
+        int totalTickets = player1.TicketsPurchased + player2.TicketsPurchased + player3.TicketsPurchased;
+        decimal totalRevenue = totalTickets * _gameSettings.Value.TicketPrice;
+
+        // Expected prize values based on distribution settings
+        decimal grandPrize = totalRevenue * 0.5m;  // 50% for grand prize
+        decimal secondTierPool = totalRevenue * 0.3m;  // 30% for second tier
+        decimal thirdTierPool = totalRevenue * 0.1m;   // 10% for third tier
+
+        // Calculate the number of winners in each tier
+        int secondTierWinnersCount = (int)Math.Round(totalTickets * 0.1m);
+        int thirdTierWinnersCount = (int)Math.Round(totalTickets * 0.2m);
+
+        // Calculate expected balances after prizes are distributed
+        decimal expectedPlayer1Balance = 10m + grandPrize; // player1 wins grand prize as the top ticket purchaser
+
+        decimal secondPrizePerWinner = secondTierWinnersCount > 0 ? secondTierPool / secondTierWinnersCount : 0;
+        decimal thirdPrizePerWinner = thirdTierWinnersCount > 0 ? thirdTierPool / thirdTierWinnersCount : 0;
+
+        decimal expectedPlayer2Balance = 10m + secondPrizePerWinner; // player2 is second in line, should receive second-tier share
+        decimal expectedPlayer3Balance = 10m + thirdPrizePerWinner;   // player3 is third in line, should receive third-tier share
+
         // Act
         _lotteryGame.DrawPrizes();
 
-        // Assert prize distribution
-        decimal totalRevenue = (player1.TicketsPurchased + player2.TicketsPurchased + player3.TicketsPurchased) * _gameSettings.Value.TicketPrice;
-        Assert.Equal(10m + (totalRevenue * 0.5m), player1.Balance); // Grand prize
-        Assert.Equal(10m + (totalRevenue * 0.3m), player2.Balance); // Second prize
-        Assert.Equal(10m + (totalRevenue * 0.1m), player3.Balance); // Third prize
+        // Assert: Check if each player's balance matches expected values after prize distribution
+        Assert.Equal(expectedPlayer1Balance, player1.Balance); // Grand prize
+        Assert.Equal(expectedPlayer2Balance, player2.Balance); // Second-tier share
+        Assert.Equal(expectedPlayer3Balance, player3.Balance); // Third-tier share
 
         // Check the correct message was displayed
         A.CallTo(() => _fakeUI.Write(A<string>.That.Contains("Prizes distributed"))).MustHaveHappenedOnceExactly();
