@@ -12,12 +12,13 @@ public class CPUPlayerTests
 {
     private readonly CPUPlayer _cpuPlayer;
     private readonly IRandomNumberGenerator _fakeRandomGenerator;
+    private readonly IUserInterface _fakeUserInterface;
 
     public CPUPlayerTests()
     {
-        // Arrange: Create a fake random number generator
+        _fakeUserInterface = A.Fake<IUserInterface>();
         _fakeRandomGenerator = A.Fake<IRandomNumberGenerator>();
-        _cpuPlayer = new CPUPlayer("CPUPlayer1", 100m, _fakeRandomGenerator); // Starting balance of 100
+        _cpuPlayer = new CPUPlayer("CPUPlayer1", 100m, _fakeRandomGenerator, _fakeUserInterface); // Starting balance of 100
     }
 
     [Fact]

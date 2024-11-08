@@ -44,8 +44,8 @@ public class LotteryGameTests
     {
         // Arrange
         var player1 = new HumanPlayer(_fakeUI, "Player1", 10m) { TicketsPurchased = 5 };
-        var player2 = new CPUPlayer("Player2", 10m, _fakeRandomNumberGenerator) { TicketsPurchased = 3 };
-        var player3 = new CPUPlayer("Player3", 10m, _fakeRandomNumberGenerator) { TicketsPurchased = 2 };
+        var player2 = new CPUPlayer("Player2", 10m, _fakeRandomNumberGenerator, _fakeUI) { TicketsPurchased = 3 };
+        var player3 = new CPUPlayer("Player3", 10m, _fakeRandomNumberGenerator, _fakeUI) { TicketsPurchased = 2 };
 
         _lotteryGame.Players.AddRange(new Player[] { player1, player2, player3 });
 
@@ -67,7 +67,7 @@ public class LotteryGameTests
     {
         // Arrange
         var player1 = new HumanPlayer(_fakeUI, "Player1", 10m) { TicketsPurchased = 4 };
-        var player2 = new CPUPlayer("Player2", 10m, _fakeRandomNumberGenerator) { TicketsPurchased = 6 };
+        var player2 = new CPUPlayer("Player2", 10m, _fakeRandomNumberGenerator, _fakeUI) { TicketsPurchased = 6 };
 
         _lotteryGame.Players.AddRange(new Player[] { player1, player2 });
 

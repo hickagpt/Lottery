@@ -63,7 +63,7 @@ public class LotteryGame
         int cpuPlayersCount = _randomNumberGenerator.Next(_settings.MinCPUPlayers, _settings.MaxCPUPlayers + 1);
         for (int i = 0; i < cpuPlayersCount; i++)
         {
-            _players.Add(new CPUPlayer($"CPU Player {i + 1}", _settings.StartingBalance, _randomNumberGenerator));
+            _players.Add(new CPUPlayer($"CPU Player {i + 1}", _settings.StartingBalance, _randomNumberGenerator, _ui));
         }
     }
 
