@@ -10,4 +10,9 @@ public class RandomNumberGenerator : IRandomNumberGenerator
     {
         return _random.Next(min, max);
     }
+
+    public int Next()
+    {
+        return _random.Next();
+    }
 }

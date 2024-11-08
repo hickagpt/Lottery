@@ -44,38 +44,70 @@ public class LotteryGame
         decimal roundProfit = revenue * 0.1m;
         LotteryProfit += roundProfit;
 
-        // Sort players by tickets purchased in descending order
-        var winners = new List<Player>(_players);
-        winners.Sort((a, b) => b.TicketsPurchased.CompareTo(a.TicketsPurchased));
-
-        // Grand Prize: Awarded to the player with the most tickets
-        if (winners.Count > 0)
+        // Create a list where each ticket corresponds to a player, enabling random draws weighted by tickets purchased
+        var ticketPool = new List<Player>();
+        foreach (var player in _players)
         {
-            winners[0].Balance += grandPrize;
+            for (int i = 0; i < player.TicketsPurchased; i++)
+            {
+                ticketPool.Add(player);
+            }
         }
 
-        // Calculate the number of winners for second and third tiers
+        // Track already selected winners to avoid duplicate winnings across tiers
+        var selectedWinners = new HashSet<Player>();
+
+        // Draw the grand prize winner
+        Player grandPrizeWinner = null;
+        if (ticketPool.Count > 0)
+        {
+            grandPrizeWinner = ticketPool[_randomNumberGenerator.Next(0, ticketPool.Count)];
+            grandPrizeWinner.Balance += grandPrize;
+            selectedWinners.Add(grandPrizeWinner);
+        }
+
+        // Determine number of winners for second and third tiers
         int secondTierWinnersCount = (int)Math.Round(totalTickets * 0.1m);
         int thirdTierWinnersCount = (int)Math.Round(totalTickets * 0.2m);
 
-        // Distribute second-tier prize equally among the top `secondTierWinnersCount` players
-        decimal secondPrizePerWinner = secondTierWinnersCount > 0 ? secondPrizePool / secondTierWinnersCount : 0;
-        for (int i = 1; i <= secondTierWinnersCount && i < winners.Count; i++)
+        // Helper function to draw unique winners for each tier
+        IEnumerable<Player> DrawWinners(int count)
         {
-            winners[i].Balance += secondPrizePerWinner;
+            var tierWinners = new List<Player>();
+            int attempts = 0;
+            while (tierWinners.Count < count && attempts < ticketPool.Count * 2) // Safety limit to avoid infinite loop
+            {
+                var potentialWinner = ticketPool[_randomNumberGenerator.Next(0, ticketPool.Count)];
+                if (!selectedWinners.Contains(potentialWinner))
+                {
+                    tierWinners.Add(potentialWinner);
+                    selectedWinners.Add(potentialWinner);
+                }
+                attempts++;
+            }
+            return tierWinners;
         }
 
-        // Distribute third-tier prize equally among the next `thirdTierWinnersCount` players
-        decimal thirdPrizePerWinner = thirdTierWinnersCount > 0 ? thirdPrizePool / thirdTierWinnersCount : 0;
-        for (int i = secondTierWinnersCount + 1; i <= secondTierWinnersCount + thirdTierWinnersCount && i < winners.Count; i++)
+        // Draw and distribute the second-tier prize among winners
+        var secondTierWinners = DrawWinners(secondTierWinnersCount).ToList();
+        decimal secondPrizePerWinner = secondTierWinnersCount > 0 ? secondPrizePool / secondTierWinnersCount : 0;
+        foreach (var winner in secondTierWinners)
         {
-            winners[i].Balance += thirdPrizePerWinner;
+            winner.Balance += secondPrizePerWinner;
+        }
+
+        // Draw and distribute the third-tier prize among winners
+        var thirdTierWinners = DrawWinners(thirdTierWinnersCount).ToList();
+        decimal thirdPrizePerWinner = thirdTierWinnersCount > 0 ? thirdPrizePool / thirdTierWinnersCount : 0;
+        foreach (var winner in thirdTierWinners)
+        {
+            winner.Balance += thirdPrizePerWinner;
         }
 
         // Display results
-        _ui.Write($"Prizes distributed: Grand - {grandPrize:C}, " +
-                  $"Second - {secondPrizePool:C} shared by {secondTierWinnersCount} winners, " +
-                  $"Third - {thirdPrizePool:C} shared by {thirdTierWinnersCount} winners");
+        _ui.Write($"Prizes distributed: Grand - {grandPrize:C} (Winner: {grandPrizeWinner?.Name}), " +
+                  $"Second - {secondPrizePool:C} shared by {secondTierWinners.Count} winners, " +
+                  $"Third - {thirdPrizePool:C} shared by {thirdTierWinners.Count} winners");
         _ui.Write($"Lottery profit for this round: {roundProfit:C}");
     }
 
