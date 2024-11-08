@@ -82,6 +82,8 @@ public class LotteryGame
             _ui.Write($"{player.Name} has a balance of {player.Balance:C}");
         }
 
+        _ui.Write($"Total House Profit? {LotteryProfit}");
+
         // Check if any players want to continue
         _ui.Write("Do you want to play another round? (y/n)");
         if (_ui.Read()?.ToLower() != "y") _isPlaying = false;
